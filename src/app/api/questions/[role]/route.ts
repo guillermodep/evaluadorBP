@@ -18,6 +18,10 @@ interface QuestionResponse {
   questions: Question[];
 }
 
+interface ParseError extends Error {
+  message: string;
+}
+
 type Props = {
   params: {
     role: string;
@@ -116,7 +120,8 @@ export async function GET(
       }
 
       return NextResponse.json(validQuestions);
-    } catch (parseError) {
+    } catch (error) {
+      const parseError = error as ParseError;
       console.error('Parse error:', parseError, 'Content:', content);
       return NextResponse.json(
         { error: 'Failed to parse response', details: parseError.message },
@@ -125,12 +130,18 @@ export async function GET(
     }
 
   } catch (error) {
-    console.error('GROQ API error:', error.response?.data || error.message);
+    if (axios.isAxiosError(error)) {
+      console.error('GROQ API error:', error.response?.data || error.message);
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch questions',
+          details: error.response?.data?.error || error.message
+        },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch questions',
-        details: error.response?.data?.error || error.message
-      },
+      { error: 'Unknown error occurred' },
       { status: 500 }
     );
   }
