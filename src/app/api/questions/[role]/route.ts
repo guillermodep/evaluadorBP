@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Question, Difficulty } from '@/types';
-
-const difficulties: Difficulty[] = ['basic', 'intermediate', 'advanced', 'expert', 'master'];
+import { Question } from '@/types';
 
 export async function GET(
   req: NextRequest,
@@ -10,34 +8,61 @@ export async function GET(
   const apiKey = process.env.GROQ_API_KEY?.trim();
   const { role } = params;
 
+  const roleInSpanish = {
+    developer: 'desarrollador',
+    qa: 'analista QA',
+    devops: 'ingeniero DevOps'
+  }[role] || role;
+
   if (!apiKey) {
     console.error('API key not configured');
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
   try {
-    const questions: Question[] = [];
-    const prompt = `Generate 5 multiple choice questions for a ${role} position with varying difficulty levels.
-      Each question should be specific to the ${role} role.
-      Format the response as JSON with the following structure:
+    const prompt = `Genera 5 preguntas de opción múltiple únicas para una posición de ${roleInSpanish}.
+      Las preguntas y respuestas DEBEN estar en español.
+      
+      Formato JSON requerido:
       {
         "questions": [
           {
             "id": number,
-            "question": "string",
-            "options": ["string", "string", "string", "string"],
-            "correctAnswer": "string",
-            "difficulty": "one of: basic, intermediate, advanced, expert, master"
+            "question": "pregunta en español",
+            "options": ["opción 1 en español", "opción 2 en español", "opción 3 en español", "opción 4 en español"],
+            "correctAnswer": "la respuesta correcta en español (debe ser una de las opciones)",
+            "difficulty": "basic|intermediate|advanced|expert|master",
+            "topic": "tema de la pregunta en español"
           }
         ]
       }
-      Important:
-      - Generate exactly 5 questions
-      - Each question must have exactly 4 options
-      - The correctAnswer must be one of the options
-      - Use different difficulty levels for each question
-      - Make questions relevant to ${role} role
-      - Ensure questions test real technical knowledge`;
+
+      Requisitos:
+      - Todas las preguntas y respuestas DEBEN estar en español
+      - Genera exactamente 5 preguntas
+      - Cada pregunta debe tener exactamente 4 opciones
+      - La respuesta correcta debe ser exactamente igual a una de las opciones
+      - Usa diferentes niveles de dificultad para cada pregunta
+      - Las preguntas deben ser técnicas y relevantes para el rol
+      - Evita preguntas teóricas simples, enfócate en escenarios prácticos
+      
+      Para ${roleInSpanish}, cubre estas áreas:
+      ${role === 'developer' ? `
+      - Programación y lenguajes
+      - Algoritmos y estructuras de datos
+      - Patrones de diseño
+      - Testing y depuración
+      - Arquitectura de software` : role === 'qa' ? `
+      - Metodologías de pruebas
+      - Automatización de pruebas
+      - Procesos de calidad
+      - Gestión de bugs
+      - Diseño de casos de prueba` : `
+      - CI/CD y despliegue continuo
+      - Servicios en la nube
+      - Contenedores y orquestación
+      - Monitoreo y logging
+      - Infraestructura como código`}`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -48,8 +73,11 @@ export async function GET(
       body: JSON.stringify({
         model: 'mixtral-8x7b-32768',
         messages: [{ 
-          role: 'user', 
-          content: prompt 
+          role: 'system',
+          content: 'Eres un experto técnico que genera preguntas en español. Todas tus respuestas deben ser en español.'
+        }, {
+          role: 'user',
+          content: prompt
         }],
         temperature: 0.7,
         max_tokens: 2048,
@@ -57,39 +85,43 @@ export async function GET(
     });
 
     if (!response.ok) {
-      console.error('API Response not OK:', await response.text());
-      throw new Error(`API responded with status ${response.status}`);
+      const errorText = await response.text();
+      console.error('API Response Error:', errorText);
+      throw new Error(`API responded with status ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
-    
+    console.log('API Response:', JSON.stringify(data, null, 2));
+
     if (!data.choices?.[0]?.message?.content) {
-      console.error('Invalid API response structure:', data);
       throw new Error('Invalid API response structure');
     }
 
-    try {
-      const content = data.choices[0].message.content;
-      const parsedData = JSON.parse(content);
+    const content = data.choices[0].message.content;
+    const parsedData = JSON.parse(content);
 
-      if (!Array.isArray(parsedData.questions) || parsedData.questions.length !== 5) {
-        console.error('Invalid questions format:', parsedData);
-        throw new Error('Invalid questions format');
+    if (!Array.isArray(parsedData.questions) || parsedData.questions.length !== 5) {
+      throw new Error('Invalid questions format');
+    }
+
+    // Validar que todo esté en español
+    parsedData.questions.forEach((q: any, index: number) => {
+      if (!q.question || !Array.isArray(q.options) || q.options.length !== 4 || !q.correctAnswer || !q.difficulty || !q.topic) {
+        throw new Error(`Invalid question format at index ${index}`);
       }
 
-      // Validar cada pregunta
-      parsedData.questions.forEach((q: any, index: number) => {
-        if (!q.question || !Array.isArray(q.options) || q.options.length !== 4 || !q.correctAnswer || !q.difficulty) {
-          console.error(`Invalid question format at index ${index}:`, q);
-          throw new Error(`Invalid question format at index ${index}`);
-        }
-      });
+      // Verificar que la respuesta correcta esté en las opciones
+      if (!q.options.includes(q.correctAnswer)) {
+        throw new Error(`Correct answer not found in options at index ${index}`);
+      }
 
-      return NextResponse.json(parsedData.questions);
-    } catch (parseError) {
-      console.error('Error parsing API response:', parseError);
-      throw new Error('Failed to parse API response');
-    }
+      // Verificar que las opciones sean únicas
+      if (new Set(q.options).size !== 4) {
+        throw new Error(`Duplicate options found at index ${index}`);
+      }
+    });
+
+    return NextResponse.json(parsedData.questions);
 
   } catch (error) {
     console.error('Error in questions API:', error);

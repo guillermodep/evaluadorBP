@@ -86,8 +86,36 @@ export default function EvaluationPage({ params }: { params: { role: string } })
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Cargando preguntas...</div>;
-  if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
+  const handleCancel = () => {
+    if (window.confirm('¿Estás seguro que deseas cancelar la evaluación? Perderás todo el progreso.')) {
+      router.push('/home');
+    }
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center">
+      <div>Cargando preguntas...</div>
+      <button
+        onClick={handleCancel}
+        className="mt-4 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+      >
+        Cancelar
+      </button>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen flex flex-col items-center justify-center">
+      <div className="text-red-500">{error}</div>
+      <button
+        onClick={handleCancel}
+        className="mt-4 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+      >
+        Volver al inicio
+      </button>
+    </div>
+  );
+
   if (result) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-2xl mx-auto p-8 bg-white rounded-xl shadow-lg">
@@ -115,15 +143,24 @@ export default function EvaluationPage({ params }: { params: { role: string } })
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-2xl mx-auto p-8 bg-white rounded-xl shadow-lg">
-        <div className="mb-8">
-          <p className="text-sm text-gray-500 mb-2">
-            Pregunta {currentQuestion + 1} de {questions.length}
-          </p>
-          <p className="text-sm text-gray-500 mb-4">
-            Dificultad: {questions[currentQuestion].difficulty}
-          </p>
-          <h2 className="text-xl font-semibold mb-6">{questions[currentQuestion].question}</h2>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <p className="text-sm text-gray-500 mb-2">
+              Pregunta {currentQuestion + 1} de {questions.length}
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Dificultad: {questions[currentQuestion].difficulty}
+            </p>
+          </div>
+          <button
+            onClick={handleCancel}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            Cancelar
+          </button>
         </div>
+
+        <h2 className="text-xl font-semibold mb-6">{questions[currentQuestion].question}</h2>
 
         <div className="space-y-4">
           {questions[currentQuestion].options.map((option, index) => (
