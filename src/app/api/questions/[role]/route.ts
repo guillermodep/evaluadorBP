@@ -6,6 +6,18 @@ if (!axios) {
   console.error('Axios not available');
 }
 
+interface Question {
+  id: number;
+  question: string;
+  type: string;
+  options: string[];
+  correctAnswer: string;
+}
+
+interface QuestionResponse {
+  questions: Question[];
+}
+
 type Props = {
   params: {
     role: string;
@@ -84,13 +96,13 @@ export async function GET(
     }
 
     try {
-      const parsedData = JSON.parse(content);
+      const parsedData = JSON.parse(content) as QuestionResponse;
       
       if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
         throw new Error('Invalid response format');
       }
 
-      const validQuestions = parsedData.questions.filter(q => 
+      const validQuestions = parsedData.questions.filter((q: Question) => 
         q.question &&
         q.options &&
         Array.isArray(q.options) &&
