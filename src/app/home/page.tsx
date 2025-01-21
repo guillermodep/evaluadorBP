@@ -1,86 +1,208 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { useState } from 'react';
 
 const roles = [
-  { id: 'developer', title: 'Desarrollador', icon: '👨‍💻' },
-  { id: 'qa', title: 'QA', icon: '🔍' },
-  { id: 'devops', title: 'DevOps', icon: '⚙️' }
+  { 
+    id: 'developer', 
+    title: 'Desarrollador', 
+    icon: '👨‍💻',
+    specialties: [
+      { id: 'backend', title: 'Backend Developer', icon: '⚙️' },
+      { id: 'frontend', title: 'Frontend Developer', icon: '🎨' },
+      { id: 'fullstack', title: 'Fullstack Developer', icon: '🛠️' }
+    ]
+  },
+  { 
+    id: 'qa', 
+    title: 'QA', 
+    icon: '🔍',
+    specialties: [
+      { id: 'quality-assurance', title: 'Quality Assurance', icon: '✅' },
+      { id: 'quality-engineer', title: 'Quality Engineer', icon: '🔧' }
+    ]
+  },
+  { 
+    id: 'devops', 
+    title: 'DevOps', 
+    icon: '⚙️',
+    specialties: [
+      { id: 'devops', title: 'DevOps Engineer', icon: '🔄' },
+      { id: 'devsecops', title: 'DevSecOps Engineer', icon: '🔒' },
+      { id: 'platform', title: 'Platform Engineer', icon: '🏗️' }
+    ]
+  }
 ];
+
+const buttonVariants = {
+  initial: { 
+    scale: 1,
+    y: 0,
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+  },
+  hover: { 
+    scale: 1.05,
+    y: -5,
+    boxShadow: '0 8px 12px rgba(0, 0, 0, 0.15)',
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 10
+    }
+  },
+  tap: { 
+    scale: 0.95,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+  }
+};
+
+const iconVariants = {
+  initial: { 
+    scale: 1,
+    rotate: 0 
+  },
+  hover: { 
+    scale: 1.2,
+    rotate: [0, -10, 10, -10, 10, 0],
+    transition: {
+      duration: 0.5,
+      ease: "easeInOut"
+    }
+  }
+};
 
 export default function HomePage() {
   const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState(null);
+
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+  };
+
+  const handleSpecialtySelect = (roleId, specialtyId) => {
+    router.push(`/evaluation/${roleId}/${specialtyId}`);
+  };
 
   return (
-    <main style={{minHeight: '100vh'}} className="flex flex-col items-center justify-center p-8">
-      <div style={{maxWidth: '1000px'}} className="w-full">
-        <header className="text-center mb-12">
-          <h1 style={{fontSize: '2.5rem'}} className="font-bold mb-4">
-            Evaluación Técnica
-          </h1>
-          <p style={{color: '#666'}}>
-            Selecciona tu rol para comenzar
-          </p>
-        </header>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-20">
+        <motion.h1 
+          className="text-4xl font-bold text-center mb-2"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Evaluación Técnica
+        </motion.h1>
+        <motion.p 
+          className="text-center text-gray-600 mb-12"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          {selectedRole ? 'Selecciona tu especialidad' : 'Selecciona tu rol para comenzar'}
+        </motion.p>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '2rem',
-          margin: '0 auto',
-          maxWidth: '900px'
-        }}>
-          {roles.map((role) => (
-            <button
-              key={role.id}
-              onClick={() => router.push(`/evaluation/${role.id}`)}
-              style={{
-                padding: '2rem',
-                background: 'white',
-                borderRadius: '1rem',
-                border: '2px solid #eee',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-5px)';
-                e.currentTarget.style.boxShadow = '0 8px 12px rgba(0,0,0,0.1)';
-                e.currentTarget.style.borderColor = '#3b82f6';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                e.currentTarget.style.borderColor = '#eee';
-              }}
-            >
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '1rem'
-              }}>
-                <span style={{fontSize: '3rem'}}>{role.icon}</span>
-                <span style={{
-                  fontSize: '1.2rem',
-                  fontWeight: '500',
-                  color: '#333'
-                }}>
-                  {role.title}
-                </span>
-              </div>
-            </button>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {!selectedRole ? (
+            // Mostrar selección de roles
+            roles.map((role, index) => (
+              <motion.button
+                key={role.id}
+                onClick={() => handleRoleSelect(role)}
+                className="bg-white rounded-xl p-8
+                  border-2 border-gray-100
+                  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                variants={buttonVariants}
+                initial="initial"
+                whileHover="hover"
+                whileTap="tap"
+                custom={index}
+                animate={{ 
+                  opacity: [0, 1],
+                  y: [50, 0]
+                }}
+                transition={{
+                  duration: 0.5,
+                  delay: index * 0.1,
+                  ease: "easeOut"
+                }}
+              >
+                <div className="flex flex-col items-center gap-4">
+                  <motion.span 
+                    className="text-4xl"
+                    variants={iconVariants}
+                  >
+                    {role.icon}
+                  </motion.span>
+                  <span className="text-lg font-medium text-gray-800">
+                    {role.title}
+                  </span>
+                </div>
+              </motion.button>
+            ))
+          ) : (
+            // Mostrar selección de especialidades
+            <>
+              <motion.button
+                onClick={() => setSelectedRole(null)}
+                className="absolute top-8 left-8 text-gray-600 hover:text-gray-800"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                ← Volver
+              </motion.button>
+              
+              {selectedRole.specialties.map((specialty, index) => (
+                <motion.button
+                  key={specialty.id}
+                  onClick={() => handleSpecialtySelect(selectedRole.id, specialty.id)}
+                  className="bg-white rounded-xl p-8
+                    border-2 border-gray-100
+                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  variants={buttonVariants}
+                  initial="initial"
+                  whileHover="hover"
+                  whileTap="tap"
+                  custom={index}
+                  animate={{ 
+                    opacity: [0, 1],
+                    y: [50, 0]
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    delay: index * 0.1,
+                    ease: "easeOut"
+                  }}
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <motion.span 
+                      className="text-4xl"
+                      variants={iconVariants}
+                    >
+                      {specialty.icon}
+                    </motion.span>
+                    <span className="text-lg font-medium text-gray-800">
+                      {specialty.title}
+                    </span>
+                  </div>
+                </motion.button>
+              ))}
+            </>
+          )}
         </div>
 
-        <footer style={{
-          textAlign: 'center',
-          marginTop: '3rem',
-          color: '#666'
-        }}>
+        <motion.footer 
+          className="text-center mt-12 text-gray-500"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        >
           Desarrollado con ❤️ por el equipo de evaluación técnica
-        </footer>
+        </motion.footer>
       </div>
-    </main>
+    </div>
   );
 }

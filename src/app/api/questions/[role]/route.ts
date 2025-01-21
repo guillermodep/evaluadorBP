@@ -20,7 +20,13 @@ export async function GET(
   }
 
   try {
-    const prompt = `Genera 5 preguntas de opción múltiple únicas para una posición de ${roleInSpanish}.
+    // Agregar timestamp y número aleatorio para forzar variación
+    const timestamp = new Date().toISOString();
+    const randomSeed = Math.random().toString(36).substring(7);
+
+    const prompt = `[Timestamp: ${timestamp}, Seed: ${randomSeed}]
+      Genera 5 preguntas de opción múltiple NUEVAS Y DIFERENTES para una posición de ${roleInSpanish}.
+      IMPORTANTE: Genera preguntas diferentes a cualquier solicitud anterior.
       Las preguntas y respuestas DEBEN estar en español.
       
       Formato JSON requerido:
@@ -38,6 +44,7 @@ export async function GET(
       }
 
       Requisitos:
+      - CADA PREGUNTA DEBE SER ÚNICA Y DIFERENTE A PREGUNTAS ANTERIORES
       - Todas las preguntas y respuestas DEBEN estar en español
       - Genera exactamente 5 preguntas
       - Cada pregunta debe tener exactamente 4 opciones
@@ -45,24 +52,25 @@ export async function GET(
       - Usa diferentes niveles de dificultad para cada pregunta
       - Las preguntas deben ser técnicas y relevantes para el rol
       - Evita preguntas teóricas simples, enfócate en escenarios prácticos
+      - ASEGÚRATE DE GENERAR PREGUNTAS DIFERENTES EN CADA SOLICITUD
       
-      Para ${roleInSpanish}, cubre estas áreas:
+      Para ${roleInSpanish}, cubre estas áreas de manera única y creativa:
       ${role === 'developer' ? `
-      - Programación y lenguajes
-      - Algoritmos y estructuras de datos
-      - Patrones de diseño
-      - Testing y depuración
-      - Arquitectura de software` : role === 'qa' ? `
-      - Metodologías de pruebas
-      - Automatización de pruebas
-      - Procesos de calidad
-      - Gestión de bugs
-      - Diseño de casos de prueba` : `
-      - CI/CD y despliegue continuo
-      - Servicios en la nube
-      - Contenedores y orquestación
-      - Monitoreo y logging
-      - Infraestructura como código`}`;
+      - Programación y lenguajes (casos prácticos)
+      - Algoritmos y estructuras de datos (problemas reales)
+      - Patrones de diseño (situaciones específicas)
+      - Testing y depuración (escenarios del mundo real)
+      - Arquitectura de software (casos de uso prácticos)` : role === 'qa' ? `
+      - Metodologías de pruebas (casos prácticos)
+      - Automatización de pruebas (herramientas y escenarios)
+      - Procesos de calidad (situaciones reales)
+      - Gestión de bugs (casos específicos)
+      - Diseño de casos de prueba (ejemplos concretos)` : `
+      - CI/CD y despliegue continuo (casos prácticos)
+      - Servicios en la nube (escenarios específicos)
+      - Contenedores y orquestación (problemas reales)
+      - Monitoreo y logging (situaciones prácticas)
+      - Infraestructura como código (casos de uso)`}`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -74,13 +82,20 @@ export async function GET(
         model: 'mixtral-8x7b-32768',
         messages: [{ 
           role: 'system',
-          content: 'Eres un experto técnico que genera preguntas en español. Todas tus respuestas deben ser en español.'
+          content: `Eres un experto técnico que genera preguntas en español. 
+            Debes asegurarte que cada conjunto de preguntas sea ÚNICO y DIFERENTE.
+            Nunca repitas preguntas anteriores.
+            Usa el timestamp y seed proporcionados para generar variaciones.
+            Todas tus respuestas deben ser en español.`
         }, {
           role: 'user',
           content: prompt
         }],
-        temperature: 0.7,
+        temperature: 0.95, // Aumentado para mayor variabilidad
         max_tokens: 2048,
+        top_p: 0.9, // Agregado para más variabilidad
+        frequency_penalty: 0.8, // Penaliza la repetición de términos
+        presence_penalty: 0.8, // Favorece la introducción de nuevos conceptos
       }),
     });
 
