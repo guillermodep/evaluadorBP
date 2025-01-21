@@ -1,147 +1,100 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import { Question, Difficulty } from '@/types';
 
-// Verificar que axios está disponible
-if (!axios) {
-  console.error('Axios not available');
-}
-
-interface Question {
-  id: number;
-  question: string;
-  type: string;
-  options: string[];
-  correctAnswer: string;
-}
-
-interface QuestionResponse {
-  questions: Question[];
-}
-
-interface ParseError extends Error {
-  message: string;
-}
-
-type Props = {
-  params: {
-    role: string;
-  };
-};
+const difficulties: Difficulty[] = ['basic', 'intermediate', 'advanced', 'expert', 'master'];
 
 export async function GET(
   req: NextRequest,
-  { params }: Props
+  { params }: { params: { role: string } }
 ): Promise<NextResponse> {
   const apiKey = process.env.GROQ_API_KEY?.trim();
   const { role } = params;
 
   if (!apiKey) {
+    console.error('API key not configured');
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
   try {
-    console.log('Making request to GROQ API...');
-    const response = await axios.post(
-      'https://api.groq.com/openai/v1/chat/completions',
+    const questions: Question[] = [];
+    const prompt = `Generate 5 multiple choice questions for a ${role} position with varying difficulty levels.
+      Each question should be specific to the ${role} role.
+      Format the response as JSON with the following structure:
       {
-        model: "mixtral-8x7b-32768",
-        messages: [
+        "questions": [
           {
-            role: "system",
-            content: `Eres un entrevistador técnico experto especializado en crear preguntas de opción múltiple.
-            Para cada pregunta, debes generar:
-            1. Una pregunta técnica específica del rol
-            2. Exactamente 4 opciones de respuesta
-            3. Una respuesta correcta que debe estar entre las opciones
-            4. Las opciones deben ser claras y mutuamente excluyentes
-            5. Todas las respuestas deben estar en español`
-          },
-          {
-            role: "user",
-            content: `Genera 3 preguntas técnicas de opción múltiple para una entrevista de ${role}.
-            Cada pregunta debe ser específica del rol y tener exactamente este formato JSON:
-{
-  "questions": [
-    {
-      "id": 1,
-      "question": "¿[Pregunta técnica específica de ${role}]?",
-      "type": "multiple_choice",
-      "options": [
-        "Una respuesta técnicamente correcta",
-        "Una respuesta plausible pero incorrecta",
-        "Otra respuesta incorrecta pero relacionada",
-        "Una respuesta claramente incorrecta"
-      ],
-      "correctAnswer": "Una respuesta técnicamente correcta"
-    }
-  ]
-}`
+            "id": number,
+            "question": "string",
+            "options": ["string", "string", "string", "string"],
+            "correctAnswer": "string",
+            "difficulty": "one of: basic, intermediate, advanced, expert, master"
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-        response_format: { type: "json_object" },
-        presence_penalty: 0.3,
-        frequency_penalty: 0.3
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        }
+        ]
       }
-    );
+      Important:
+      - Generate exactly 5 questions
+      - Each question must have exactly 4 options
+      - The correctAnswer must be one of the options
+      - Use different difficulty levels for each question
+      - Make questions relevant to ${role} role
+      - Ensure questions test real technical knowledge`;
 
-    const content = response.data.choices?.[0]?.message?.content;
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'mixtral-8x7b-32768',
+        messages: [{ 
+          role: 'user', 
+          content: prompt 
+        }],
+        temperature: 0.7,
+        max_tokens: 2048,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('API Response not OK:', await response.text());
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
     
-    if (!content) {
-      console.error('No content in response:', response.data);
-      throw new Error('No content in response');
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid API response structure:', data);
+      throw new Error('Invalid API response structure');
     }
 
     try {
-      const parsedData = JSON.parse(content) as QuestionResponse;
-      
-      if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
-        throw new Error('Invalid response format');
+      const content = data.choices[0].message.content;
+      const parsedData = JSON.parse(content);
+
+      if (!Array.isArray(parsedData.questions) || parsedData.questions.length !== 5) {
+        console.error('Invalid questions format:', parsedData);
+        throw new Error('Invalid questions format');
       }
 
-      const validQuestions = parsedData.questions.filter((q: Question) => 
-        q.question &&
-        q.options &&
-        Array.isArray(q.options) &&
-        q.options.length === 4 &&
-        q.correctAnswer &&
-        q.options.includes(q.correctAnswer)
-      );
+      // Validar cada pregunta
+      parsedData.questions.forEach((q: any, index: number) => {
+        if (!q.question || !Array.isArray(q.options) || q.options.length !== 4 || !q.correctAnswer || !q.difficulty) {
+          console.error(`Invalid question format at index ${index}:`, q);
+          throw new Error(`Invalid question format at index ${index}`);
+        }
+      });
 
-      if (validQuestions.length === 0) {
-        throw new Error('No valid questions generated');
-      }
-
-      return NextResponse.json(validQuestions);
-    } catch (error) {
-      const parseError = error as ParseError;
-      console.error('Parse error:', parseError, 'Content:', content);
-      return NextResponse.json(
-        { error: 'Failed to parse response', details: parseError.message },
-        { status: 500 }
-      );
+      return NextResponse.json(parsedData.questions);
+    } catch (parseError) {
+      console.error('Error parsing API response:', parseError);
+      throw new Error('Failed to parse API response');
     }
 
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error('GROQ API error:', error.response?.data || error.message);
-      return NextResponse.json(
-        { 
-          error: 'Failed to fetch questions',
-          details: error.response?.data?.error || error.message
-        },
-        { status: 500 }
-      );
-    }
+    console.error('Error in questions API:', error);
     return NextResponse.json(
-      { error: 'Unknown error occurred' },
+      { error: error instanceof Error ? error.message : 'Failed to generate questions' },
       { status: 500 }
     );
   }
