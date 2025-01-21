@@ -234,7 +234,9 @@ export default function EvaluationPage({
             `}>
               {currentQ.difficulty.charAt(0).toUpperCase() + currentQ.difficulty.slice(1)}
             </span>
-            <span className="text-sm text-gray-500">{currentQ.topic}</span>
+            {currentQ.topic && (
+              <span className="text-sm text-gray-500">{currentQ.topic}</span>
+            )}
           </div>
         </div>
 
