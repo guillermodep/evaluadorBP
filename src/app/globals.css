@@ -2,149 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --primary: #3b82f6;
+  --secondary: #6366f1;
+}
+
 body {
-  background: #000;
-  color: white;
-  margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: white;
 }
 
-button {
-  all: unset;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  position: relative;
-  overflow: hidden;
+.btn {
+  @apply px-8 py-6 rounded-xl transition-all duration-200;
 }
 
-button::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  background: linear-gradient(
-    45deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 100%
-  );
-  transition: opacity 0.3s;
+.btn-role {
+  @apply bg-white border-2 shadow-lg;
+  @apply hover:shadow-xl hover:-translate-y-1;
+  @apply flex flex-col items-center gap-4;
 }
 
-button:hover::after {
-  opacity: 1;
+.icon-large {
+  @apply text-4xl;
 }
 
-button:focus-visible {
-  outline: 2px solid white;
-  outline-offset: 2px;
+.title-main {
+  @apply text-4xl font-bold text-gray-900;
 }
 
-/* Reset de tamaños */
-h1 {
-  font-size: 1.5rem;
-  line-height: 2rem;
-}
-
-h2 {
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-}
-
-p {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-
-/* Efectos y animaciones */
-.backdrop-blur-sm {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .card-hover {
+    @apply hover:-translate-y-1 hover:scale-[1.02];
   }
-}
-
-/* Ajustes de contenedor */
-.container {
-  width: 100%;
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-/* Ajustes de tarjetas */
-.card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.75rem;
-  transition: all 0.2s ease;
-}
-
-.card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-2px);
-}
-
-/* Ajustes de iconos */
-.icon {
-  font-size: 1.5rem;
-  line-height: 1;
-}
-
-/* Ajustes de botones */
-.button {
-  transition: all 0.2s ease;
-}
-
-.button:hover {
-  transform: translateY(-1px);
-}
-
-/* Ajustes de texto */
-.text-gradient {
-  background: linear-gradient(to right, #60a5fa, #3b82f6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Efectos de hover mejorados */
-.group:hover .group-hover\:translate-x-1 {
-  transform: translateX(0.25rem);
-}
-
-.hover\:-translate-y-1:hover {
-  transform: translateY(-0.25rem);
-}
-
-/* Efectos de glassmorphism */
-.backdrop-blur-lg {
-  backdrop-filter: blur(16px);
+  
+  .title {
+    @apply text-4xl font-bold text-gray-800;
+  }
 }
 
 .bg-grid {
-  background-size: 30px 30px;
+  background-size: 50px 50px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    radial-gradient(circle, #6366f1 1px, transparent 1px);
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-20px) rotate(2deg); }
 }
 
 .animate-float {
-  animation: float 6s ease-in-out infinite;
+  animation: float 8s ease-in-out infinite;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Glassmorphism */
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
